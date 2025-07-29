@@ -1,0 +1,266 @@
+# Global settings
+seed: 42
+goals:
+  # Adjusted for single-trade constraint
+  win_rate_range: [0.58, 0.75]
+  risk_reward_range: [1.8, 3.5]
+  trades_per_week_range: [20, 40]  # Reduced from [25, 50] due to single-trade constraint
+data:
+  input_dir: "data/raw/"
+  prepared_file: "data/prepared.csv"
+  labeled_file: "data/labeled.csv"
+  models_dir: "models/"
+  data_dir: data
+  log_dir: logs
+
+market:
+  timezone: "America/Chicago"
+  weekly_open: "Sunday 16:00"
+  weekly_close: "Friday 16:00"
+
+# Walk-forward testing parameters
+walkforward:
+  stepback_weeks: 12  # how many weeks to walk back from the latest week
+  train_window_months: 18  # rolling training window
+  validation_window_months: 3
+  min_trades_per_week: 5
+  max_trades_per_week: 100
+  window_weeks: 1  # simulation horizon per iteration
+
+# Data preparation parameters
+prepare:
+  lookback_years: 5
+  n_clusters: 3  # set a stable cluster count; 'auto' still supported
+  lag_periods: [1, 3, 5, 10]
+  indicators:
+    ema: [5, 20]
+    rsi: [7, 14]
+    ichimoku: [9, 26, 52]
+    adx: 14
+    atr: 14
+    bollinger: 20
+    stochastic: [14, 3]
+
+# Labeling parameters
+label:
+  future_window: 24      # bars (≈ 2 h)
+  threshold: 0.0010    # allow slightly smaller moves
+  max_sl_pips: 22     # give trades more room
+  min_rr: 2.0
+  take_profit: 15
+  max_stop_loss: 15   # Increased from 12
+  max_bars: 48
+  cooldown_min: 10
+  min_rr_target: 2.0
+  min_win_rate_target: 0.58
+
+# Signal model parameters
+signal:
+  min_precision_target: 0.80
+  min_signals_per_week: 8
+  sequence_length: 32
+  batch_size: 256
+  epochs: 10
+  patience: 2
+  positive_cap: 50000       # max positives per cluster-side
+  negative_cap: 80000       # max negatives per cluster-side
+  model:
+    lstm_units: 64
+    dropout: 0.2
+  precision_filter:
+    thresholds: [0.5, 0.6, 0.65, 0.7]
+    base_features:
+      - return_1
+      - atr
+      - rsi_14
+      - stochastic_k
+      - hour
+      - weekday
+      - session_london
+      - session_ny
+  features:
+    # Price and volume features
+    - open
+    - high
+    - low
+    - close
+    - volume
+    
+    # Technical indicators
+    - ema_5
+    - ema_5_lag_1
+    - ema_5_lag_3
+    - ema_5_lag_5
+    - ema_5_lag_10
+    - ema_10
+    - ema_10_lag_1
+    - ema_10_lag_3
+    - ema_10_lag_5
+    - ema_10_lag_10
+    - ema_20
+    - ema_20_lag_1
+    - ema_20_lag_3
+    - ema_20_lag_5
+    - ema_20_lag_10
+    - ema_50
+    - ema_50_lag_1
+    - ema_50_lag_3
+    - ema_50_lag_5
+    - ema_50_lag_10
+    - rsi_14
+    - rsi_14_lag_1
+    - rsi_14_lag_3
+    - rsi_14_lag_5
+    - rsi_14_lag_10
+    - rsi_28
+    - rsi_28_lag_1
+    - rsi_28_lag_3
+    - rsi_28_lag_5
+    - rsi_28_lag_10
+    - macd
+    - macd_signal
+    - macd_diff
+    - ichimoku_tenkan
+    - ichimoku_kijun
+    - ichimoku_senkouA
+    - ichimoku_senkouB
+    - ichimoku_chikou
+    - adx
+    - plus_di
+    - minus_di
+    - atr
+    - atr_pct
+    - bb_upper
+    - bb_middle
+    - bb_lower
+    - bb_width
+    - stochastic_k
+    - stochastic_d
+    - cmf
+    - mfi
+    - bar_volatility
+    - relative_tick_volume
+    - return_1
+    - return_3
+    - return_5
+    - return_10
+    
+    # Time-based features
+    - hour
+    - weekday
+    - session_asian
+    - session_london
+    - session_ny
+    - session_overlap
+    
+    # Market regime
+    - market_regime
+
+# SL/TP parameters
+sltp:
+  # TP/SL grid parameters
+  min_tp: 4    # Minimum take profit in pips
+  max_tp: 28     # Maximum take profit in pips
+  tp_step: 2      # Step size for TP values
+  min_rr: 2.0     # Minimum Risk:Reward ratio
+  
+  # Features to use for training
+  features:
+    - close
+    - high
+    - low
+    - volume
+    - ema_5
+    - ema_10
+    - ema_20
+    - ema_50
+    - rsi_14
+    - rsi_28
+    - macd
+    - macd_signal
+    - macd_diff
+    - ichimoku_tenkan
+    - ichimoku_kijun
+    - ichimoku_senkouA
+    - ichimoku_senkouB
+    - ichimoku_chikou
+    - adx
+    - plus_di
+    - minus_di
+    - atr
+    - atr_pct
+    - bb_upper
+    - bb_middle
+    - bb_lower
+    - bb_width
+    - stochastic_k
+    - stochastic_d
+    - cmf
+    - mfi
+    - bar_volatility
+    - relative_tick_volume
+    - return_1
+    - return_3
+    - return_5
+    - return_10
+    - hour
+    - weekday
+    - session_asian
+    - session_london
+    - session_ny
+    - session_overlap
+
+# SL/TP grid configuration
+sl_tp_grid:
+  spread: 0.00013
+  sl_multipliers: [2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0]
+  tp_multipliers: [1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2]
+
+# Simulation parameters
+simulation:
+  initial_balance: 10000
+  position_size: 0.1  # 10% of balance per trade
+  max_positions: 1    # ENFORCE SINGLE TRADE CONSTRAINT
+  risk_per_trade: 0.02  # 2% risk per trade
+  cooldown_min: 5   # reduced cooldown since only one trade at a time
+  max_daily_trades: 8   # increased from 5 to compensate for single-trade constraint
+  max_weekly_trades: 35  # increased from 20 to allow more sequential trades
+  max_drawdown: 0.15  # 15% maximum drawdown
+  stop_trading_drawdown: 0.10  # Stop trading at 10% drawdown
+  session_filters:
+    asian: true
+    london: true
+    ny: true
+    overlap: true
+  market_regime_filters:
+    - 0  # Allow all regimes
+    - 1
+    - 2
+    - 3
+
+# Ranker parameters - ADJUSTED FOR SINGLE-TRADE CONSTRAINT
+ranker:
+  target_trades_per_week: 30  # Reduced from 40 due to single-trade constraint
+  min_trades_per_week: 20     # Reduced from 25 
+  max_trades_per_week: 40     # Reduced from 50
+
+# Acceptance criteria
+acceptance:
+  prepare:
+    min_rows: 50000
+    max_nan_percent: 2
+  train:
+    min_precision: 0.0  # precision tracked but not required
+  sltp:
+    min_rr: 2.0
+  simulation:
+    min_win_rate: 0.58
+    min_profit_factor: 1.5
+    max_drawdown: 0.15
+    min_trades_per_week: 20  # Reduced from 25 due to single-trade constraint
+
+backtest:
+  risk_pct: 2.5         # % of equity risked per trade
+  min_profit_factor: 1.0
+  max_drawdown: 0.10
+  min_avg_rr: 2.0  # New metric: average risk-reward ratio 

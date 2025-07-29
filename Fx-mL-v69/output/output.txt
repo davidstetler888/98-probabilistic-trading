@@ -1,0 +1,100 @@
+Test Simulation Results:
+Total Trades: 2
+Win Rate: 100.0%
+Profit Factor: inf
+Average RR: 2.40
+2024-07-07: Win Rate 100.0%, Avg RR 2.40, Trades 2
+Full Simulation Results:
+Total Trades: 17
+Win Rate: 70.6%
+Profit Factor: 3.52
+Average RR: 2.40
+[prepare] rows=111,514   regimes={0: 49890, 1: 48777, 2: 12847}   first=2023-01-09 09:15:00-06:00   last=2024-07-12 23:55:00-05:00
+[label] signals_long=30,502  signals_short=31,458  ≈788.6 signals/wk
+Test Simulation Results:
+Total Trades: 80
+Win Rate: 56.2%
+Profit Factor: 2.71
+Average RR: 3.20
+2024-07-07: Win Rate 56.2%, Avg RR 3.20, Trades 80
+Full Simulation Results:
+Total Trades: 80
+Win Rate: 56.2%
+Profit Factor: 2.71
+Average RR: 3.20
+Test Simulation Results:
+Total Trades: 8
+Win Rate: 87.5%
+Profit Factor: 8.97
+Average RR: 2.40
+2024-06-30: Win Rate 87.5%, Avg RR 2.40, Trades 8
+Full Simulation Results:
+Total Trades: 26
+Win Rate: 50.0%
+Profit Factor: 1.39
+Average RR: 2.40
+[prepare] rows=111,707   regimes={0: 50354, 1: 48668, 2: 12685}   first=2022-12-30 07:15:00-06:00   last=2024-07-05 23:55:00-05:00
+[label] signals_long=30,727  signals_short=31,820  ≈791.7 signals/wk
+Test Simulation Results:
+Total Trades: 80
+Win Rate: 42.5%
+Profit Factor: 1.70
+Average RR: 3.20
+2024-06-30: Win Rate 42.5%, Avg RR 3.20, Trades 80
+Full Simulation Results:
+Total Trades: 80
+Win Rate: 42.5%
+Profit Factor: 1.70
+Average RR: 3.20
+Test Simulation Results:
+Total Trades: 6
+Win Rate: 16.7%
+Profit Factor: 0.27
+Average RR: 2.40
+2024-06-23: Win Rate 16.7%, Avg RR 2.40, Trades 6
+Full Simulation Results:
+Total Trades: 18
+Win Rate: 33.3%
+Profit Factor: 0.68
+Average RR: 2.40
+[prepare] rows=111,727   regimes={0: 50227, 1: 48829, 2: 12671}   first=2022-12-23 07:15:00-06:00   last=2024-06-28 23:55:00-05:00
+[label] signals_long=30,821  signals_short=31,803  ≈792.7 signals/wk
+Test Simulation Results:
+Total Trades: 95
+Win Rate: 51.6%
+Profit Factor: 2.24
+Average RR: 3.20
+2024-06-23: Win Rate 51.6%, Avg RR 3.20, Trades 95
+Full Simulation Results:
+Total Trades: 95
+Win Rate: 51.6%
+Profit Factor: 2.24
+Average RR: 3.20
+Test Simulation Results:
+Total Trades: 6
+Win Rate: 50.0%
+Profit Factor: 1.37
+Average RR: 2.40
+2024-06-16: Win Rate 50.0%, Avg RR 2.40, Trades 6
+Full Simulation Results:
+Total Trades: 20
+Win Rate: 40.0%
+Profit Factor: 0.88
+Average RR: 2.40
+[prepare] rows=111,715   regimes={0: 49694, 1: 48918, 2: 13103}   first=2022-12-16 07:15:00-06:00   last=2024-06-21 23:55:00-05:00
+[label] signals_long=31,011  signals_short=31,972  ≈797.3 signals/wk
+Test Simulation Results:
+Total Trades: 83
+Win Rate: 62.7%
+Profit Factor: 4.86
+Average RR: 3.20
+2024-06-16: Win Rate 62.7%, Avg RR 3.20, Trades 83
+Full Simulation Results:
+Total Trades: 83
+Win Rate: 62.7%
+Profit Factor: 4.86
+Average RR: 3.20
+2024-06-16: Win Rate 62.7%, Avg RR 3.20, Trades 83
+2024-06-23: Win Rate 51.6%, Avg RR 3.20, Trades 95
+2024-06-30: Win Rate 42.5%, Avg RR 3.20, Trades 80
+2024-07-07: Win Rate 56.2%, Avg RR 3.20, Trades 80
