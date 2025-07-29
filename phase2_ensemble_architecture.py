@@ -125,24 +125,28 @@ class RegimeSpecialistModel(SpecialistModel):
         """Calculate how well current conditions match this regime."""
         if self.regime_type == "trending":
             # High trend strength = high specialization
-            trend_strength = np.abs(X['trend_strength_1h'] + X['trend_strength_4h']) / 2
+            trend_strength_1h = X.get('trend_strength_1h', 0.5)
+            trend_strength_4h = X.get('trend_strength_4h', 0.5)
+            trend_strength = np.abs(trend_strength_1h + trend_strength_4h) / 2
             return np.clip(trend_strength * 10, 0, 1)
         
         elif self.regime_type == "ranging":
             # Low trend strength + medium volatility = high specialization
-            trend_strength = np.abs(X['trend_strength_1h'] + X['trend_strength_4h']) / 2
-            volatility = X['atr_percentile']
+            trend_strength_1h = X.get('trend_strength_1h', 0.5)
+            trend_strength_4h = X.get('trend_strength_4h', 0.5)
+            trend_strength = np.abs(trend_strength_1h + trend_strength_4h) / 2
+            volatility = X.get('atr_percentile', 0.5)
             ranging_score = (1 - trend_strength) * (0.3 + 0.4 * volatility)
             return np.clip(ranging_score, 0, 1)
         
         elif self.regime_type == "volatile":
             # High volatility = high specialization
-            volatility = X['atr_percentile']
+            volatility = X.get('atr_percentile', 0.5)
             return np.clip(volatility, 0, 1)
         
         else:  # low_volatility
             # Low volatility = high specialization
-            volatility = X['atr_percentile']
+            volatility = X.get('atr_percentile', 0.5)
             return np.clip(1 - volatility, 0, 1)
 
 
@@ -202,13 +206,13 @@ class SessionSpecialistModel(SpecialistModel):
     def get_specialization_score(self, X: pd.DataFrame) -> np.ndarray:
         """Calculate session-specific specialization score."""
         if self.session_type == "london":
-            return X['london_session']
+            return X.get('london_session', 0.25)
         elif self.session_type == "ny":
-            return X['ny_session']
+            return X.get('ny_session', 0.25)
         elif self.session_type == "overlap":
-            return X['overlap_session']
+            return X.get('overlap_session', 0.25)
         else:  # asian
-            return X['asian_session']
+            return X.get('asian_session', 0.25)
 
 
 class VolatilitySpecialistModel(SpecialistModel):
@@ -253,7 +257,7 @@ class VolatilitySpecialistModel(SpecialistModel):
     
     def get_specialization_score(self, X: pd.DataFrame) -> np.ndarray:
         """Calculate volatility-specific specialization score."""
-        volatility = X['atr_percentile']
+        volatility = X.get('atr_percentile', 0.5)
         
         if self.volatility_type == "low":
             return np.clip(1 - volatility, 0, 1)
@@ -308,22 +312,22 @@ class MomentumSpecialistModel(SpecialistModel):
         """Calculate momentum-specific specialization score."""
         if self.momentum_type == "breakout":
             # High volatility + strong momentum = breakout
-            volatility = X['atr_percentile']
-            momentum = np.abs(X['momentum_5'])
+            volatility = X.get('atr_percentile', 0.5)
+            momentum = np.abs(X.get('momentum_5', 0.001))
             breakout_score = volatility * momentum * 10
             return np.clip(breakout_score, 0, 1)
         
         elif self.momentum_type == "reversal":
             # RSI extremes + momentum divergence = reversal
-            rsi = X['rsi']
-            momentum_div = X['momentum_divergence']
+            rsi = X.get('rsi', 50)
+            momentum_div = X.get('momentum_divergence', 0.001)
             reversal_score = (np.abs(rsi - 50) / 50) * np.abs(momentum_div)
             return np.clip(reversal_score, 0, 1)
         
         else:  # continuation
             # Strong trend + low volatility = continuation
-            trend_strength = np.abs(X['trend_strength_1h'])
-            volatility = X['atr_percentile']
+            trend_strength = np.abs(X.get('trend_strength_1h', 0.5))
+            volatility = X.get('atr_percentile', 0.5)
             continuation_score = trend_strength * (1 - volatility)
             return np.clip(continuation_score, 0, 1)
 
