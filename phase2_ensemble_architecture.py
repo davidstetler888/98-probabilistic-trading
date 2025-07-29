@@ -125,29 +125,29 @@ class RegimeSpecialistModel(SpecialistModel):
         """Calculate how well current conditions match this regime."""
         if self.regime_type == "trending":
             # High trend strength = high specialization
-            trend_strength_1h = X.get('trend_strength_1h', 0.5)
-            trend_strength_4h = X.get('trend_strength_4h', 0.5)
+            trend_strength_1h = X.get('trend_strength_1h', pd.Series([0.5] * len(X)))
+            trend_strength_4h = X.get('trend_strength_4h', pd.Series([0.5] * len(X)))
             trend_strength = np.abs(trend_strength_1h + trend_strength_4h) / 2
-            return np.clip(trend_strength * 10, 0, 1)
+            return np.clip(trend_strength * 10, 0, 1).values
         
         elif self.regime_type == "ranging":
             # Low trend strength + medium volatility = high specialization
-            trend_strength_1h = X.get('trend_strength_1h', 0.5)
-            trend_strength_4h = X.get('trend_strength_4h', 0.5)
+            trend_strength_1h = X.get('trend_strength_1h', pd.Series([0.5] * len(X)))
+            trend_strength_4h = X.get('trend_strength_4h', pd.Series([0.5] * len(X)))
             trend_strength = np.abs(trend_strength_1h + trend_strength_4h) / 2
-            volatility = X.get('atr_percentile', 0.5)
+            volatility = X.get('atr_percentile', pd.Series([0.5] * len(X)))
             ranging_score = (1 - trend_strength) * (0.3 + 0.4 * volatility)
-            return np.clip(ranging_score, 0, 1)
+            return np.clip(ranging_score, 0, 1).values
         
         elif self.regime_type == "volatile":
             # High volatility = high specialization
-            volatility = X.get('atr_percentile', 0.5)
-            return np.clip(volatility, 0, 1)
+            volatility = X.get('atr_percentile', pd.Series([0.5] * len(X)))
+            return np.clip(volatility, 0, 1).values
         
         else:  # low_volatility
             # Low volatility = high specialization
-            volatility = X.get('atr_percentile', 0.5)
-            return np.clip(1 - volatility, 0, 1)
+            volatility = X.get('atr_percentile', pd.Series([0.5] * len(X)))
+            return np.clip(1 - volatility, 0, 1).values
 
 
 class SessionSpecialistModel(SpecialistModel):
@@ -206,13 +206,13 @@ class SessionSpecialistModel(SpecialistModel):
     def get_specialization_score(self, X: pd.DataFrame) -> np.ndarray:
         """Calculate session-specific specialization score."""
         if self.session_type == "london":
-            return X.get('london_session', 0.25)
+            return X.get('london_session', pd.Series([0.25] * len(X))).values
         elif self.session_type == "ny":
-            return X.get('ny_session', 0.25)
+            return X.get('ny_session', pd.Series([0.25] * len(X))).values
         elif self.session_type == "overlap":
-            return X.get('overlap_session', 0.25)
+            return X.get('overlap_session', pd.Series([0.25] * len(X))).values
         else:  # asian
-            return X.get('asian_session', 0.25)
+            return X.get('asian_session', pd.Series([0.25] * len(X))).values
 
 
 class VolatilitySpecialistModel(SpecialistModel):
@@ -257,15 +257,15 @@ class VolatilitySpecialistModel(SpecialistModel):
     
     def get_specialization_score(self, X: pd.DataFrame) -> np.ndarray:
         """Calculate volatility-specific specialization score."""
-        volatility = X.get('atr_percentile', 0.5)
+        volatility = X.get('atr_percentile', pd.Series([0.5] * len(X)))
         
         if self.volatility_type == "low":
-            return np.clip(1 - volatility, 0, 1)
+            return np.clip(1 - volatility, 0, 1).values
         elif self.volatility_type == "medium":
             # Peak around 0.5 volatility
-            return np.clip(1 - np.abs(volatility - 0.5) * 2, 0, 1)
+            return np.clip(1 - np.abs(volatility - 0.5) * 2, 0, 1).values
         else:  # high
-            return np.clip(volatility, 0, 1)
+            return np.clip(volatility, 0, 1).values
 
 
 class MomentumSpecialistModel(SpecialistModel):
@@ -312,24 +312,24 @@ class MomentumSpecialistModel(SpecialistModel):
         """Calculate momentum-specific specialization score."""
         if self.momentum_type == "breakout":
             # High volatility + strong momentum = breakout
-            volatility = X.get('atr_percentile', 0.5)
-            momentum = np.abs(X.get('momentum_5', 0.001))
+            volatility = X.get('atr_percentile', pd.Series([0.5] * len(X)))
+            momentum = np.abs(X.get('momentum_5', pd.Series([0.001] * len(X))))
             breakout_score = volatility * momentum * 10
-            return np.clip(breakout_score, 0, 1)
+            return np.clip(breakout_score, 0, 1).values
         
         elif self.momentum_type == "reversal":
             # RSI extremes + momentum divergence = reversal
-            rsi = X.get('rsi', 50)
-            momentum_div = X.get('momentum_divergence', 0.001)
+            rsi = X.get('rsi', pd.Series([50] * len(X)))
+            momentum_div = X.get('momentum_divergence', pd.Series([0.001] * len(X)))
             reversal_score = (np.abs(rsi - 50) / 50) * np.abs(momentum_div)
-            return np.clip(reversal_score, 0, 1)
+            return np.clip(reversal_score, 0, 1).values
         
         else:  # continuation
             # Strong trend + low volatility = continuation
-            trend_strength = np.abs(X.get('trend_strength_1h', 0.5))
-            volatility = X.get('atr_percentile', 0.5)
+            trend_strength = np.abs(X.get('trend_strength_1h', pd.Series([0.5] * len(X))))
+            volatility = X.get('atr_percentile', pd.Series([0.5] * len(X)))
             continuation_score = trend_strength * (1 - volatility)
-            return np.clip(continuation_score, 0, 1)
+            return np.clip(continuation_score, 0, 1).values
 
 
 class AdvancedEnsembleSystem:
@@ -575,11 +575,19 @@ class AdvancedEnsembleSystem:
         
         for name, specialist in self.specialists.items():
             if specialist.is_trained:
-                pred = specialist.predict(features)
-                spec_score = specialist.get_specialization_score(features)
-                
-                specialist_predictions[name] = pred
-                specialization_scores[name] = spec_score
+                try:
+                    pred = specialist.predict(features)
+                    spec_score = specialist.get_specialization_score(features)
+                    
+                    # Ensure predictions are valid
+                    if pred is not None and len(pred) > 0:
+                        specialist_predictions[name] = pred
+                        specialization_scores[name] = spec_score
+                    else:
+                        print(f"⚠️ Specialist {name} returned empty predictions")
+                except Exception as e:
+                    print(f"⚠️ Error with specialist {name}: {e}")
+                    continue
         
         # Level 2: Meta-learner predictions
         meta_predictions = {}
@@ -600,9 +608,19 @@ class AdvancedEnsembleSystem:
                 X_final = np.column_stack(meta_preds)
                 final_prediction = self.meta_learners['level3_final']['model'].predict(X_final)
             else:
-                final_prediction = np.mean(list(specialist_predictions.values()), axis=0)
+                # Fallback to specialist predictions
+                if specialist_predictions:
+                    final_prediction = np.mean(list(specialist_predictions.values()), axis=0)
+                else:
+                    # Ultimate fallback - return zeros
+                    final_prediction = np.zeros(len(features))
         else:
-            final_prediction = np.mean(list(specialist_predictions.values()), axis=0)
+            # Fallback to specialist predictions
+            if specialist_predictions:
+                final_prediction = np.mean(list(specialist_predictions.values()), axis=0)
+            else:
+                # Ultimate fallback - return zeros
+                final_prediction = np.zeros(len(features))
         
         # Calculate ensemble confidence
         ensemble_confidence = self._calculate_ensemble_confidence(
@@ -620,12 +638,20 @@ class AdvancedEnsembleSystem:
     def _calculate_ensemble_confidence(self, specialist_preds: Dict, spec_scores: Dict, final_pred: np.ndarray) -> np.ndarray:
         """Calculate ensemble confidence based on specialist agreement and specialization scores."""
         
+        # Filter out any None or invalid predictions
+        valid_preds = {k: v for k, v in specialist_preds.items() if v is not None and hasattr(v, '__len__') and len(v) > 0}
+        valid_scores = {k: v for k, v in spec_scores.items() if v is not None and hasattr(v, '__len__') and len(v) > 0}
+        
+        if not valid_preds or not valid_scores:
+            # Return default confidence if no valid predictions
+            return np.full(len(final_pred), 0.5)
+        
         # Specialist agreement
-        pred_array = np.array(list(specialist_preds.values()))
+        pred_array = np.array(list(valid_preds.values()))
         agreement = 1 - np.std(pred_array, axis=0) / (np.mean(np.abs(pred_array), axis=0) + 1e-8)
         
         # Average specialization score
-        spec_array = np.array(list(spec_scores.values()))
+        spec_array = np.array(list(valid_scores.values()))
         avg_specialization = np.mean(spec_array, axis=0)
         
         # Combined confidence
