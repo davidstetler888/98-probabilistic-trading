@@ -7,6 +7,80 @@ from phase3_live_trading_preparation import LiveTradingSystem
 import warnings
 warnings.filterwarnings('ignore')
 
+def preprocess_data(df):
+    """Preprocess data to ensure correct format and column names."""
+    
+    print(f"Original columns: {list(df.columns)}")
+    
+    # Handle MT5 export format with angle brackets
+    if '<DATE>' in df.columns:
+        print("Detected MT5 export format - processing...")
+        # Remove angle brackets from column names
+        df.columns = df.columns.str.replace('<', '').str.replace('>', '')
+        print(f"Cleaned columns: {list(df.columns)}")
+    
+    # Convert column names to lowercase
+    df.columns = df.columns.str.lower()
+    print(f"Lowercase columns: {list(df.columns)}")
+    
+    # Handle different date/time formats
+    if 'date' in df.columns and 'time' in df.columns:
+        print("Processing date/time columns...")
+        # Handle MT5 format: YYYY.MM.DD HH:MM:SS
+        try:
+            df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['time'])
+            print("✅ Date/time parsing successful")
+        except Exception as e:
+            print(f"❌ Date/time parsing error: {e}")
+            return None
+        df = df.set_index('datetime')
+        df = df.drop(['date', 'time'], axis=1)
+    elif 'datetime' in df.columns:
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        df = df.set_index('datetime')
+    
+    # Handle MT5 volume columns (tickvol vs vol)
+    if 'tickvol' in df.columns and 'vol' in df.columns:
+        # Use tickvol as volume (more reliable for forex)
+        df['volume'] = df['tickvol']
+        df = df.drop(['tickvol', 'vol'], axis=1)
+    elif 'tickvol' in df.columns:
+        df['volume'] = df['tickvol']
+        df = df.drop('tickvol', axis=1)
+    elif 'vol' in df.columns:
+        df['volume'] = df['vol']
+        df = df.drop('vol', axis=1)
+    
+    # Handle spread column (optional)
+    if 'spread' in df.columns:
+        print("✅ Spread data detected - will be used for enhanced modeling")
+        # Keep spread column for enhanced features
+    else:
+        print("⚠️ No spread data - will use estimated spreads")
+    
+    # Ensure required columns exist
+    required_columns = ['open', 'high', 'low', 'close', 'volume']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    
+    if missing_columns:
+        print(f"❌ Missing required columns: {missing_columns}")
+        print(f"Available columns: {list(df.columns)}")
+        return None
+    
+    # Ensure data types are correct
+    for col in ['open', 'high', 'low', 'close']:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    
+    df['volume'] = pd.to_numeric(df['volume'], errors='coerce')
+    
+    # Remove any rows with NaN values
+    df = df.dropna()
+    
+    print(f"✅ Final processed data shape: {df.shape}")
+    print(f"✅ Final columns: {list(df.columns)}")
+    
+    return df
+
 def train_trading_system(data_file: str):
     """Train the complete trading system."""
     
@@ -15,8 +89,23 @@ def train_trading_system(data_file: str):
     # Load data
     print(f"Loading data from {data_file}...")
     try:
-        df = pd.read_csv(data_file, index_col=0, parse_dates=True)
+        # Check if file contains tab-separated data (MT5 export format)
+        with open(data_file, 'r') as f:
+            first_line = f.readline()
+            if '\t' in first_line:
+                df = pd.read_csv(data_file, sep='\t')
+                print("✅ Loaded as TSV format (MT5 export)")
+            else:
+                df = pd.read_csv(data_file)
+                print("✅ Loaded as CSV format")
+        
         print(f"Loaded {len(df)} bars of data")
+        
+        # Preprocess the data
+        df = preprocess_data(df)
+        if df is None:
+            return None
+            
         print(f"Date range: {df.index[0]} to {df.index[-1]}")
         
         # Check data format
