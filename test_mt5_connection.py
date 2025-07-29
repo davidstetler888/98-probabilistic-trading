@@ -62,17 +62,17 @@ def test_mt5_connection():
     
     # Step 4: Test symbol info
     print("4. Testing symbol info...")
-    symbol_info = mt5.symbol_info("EURUSD")
+    symbol_info = mt5.symbol_info("EURUSD.PRO")
     if symbol_info is None:
-        print("❌ EURUSD symbol not found")
+        print("❌ EURUSD.PRO symbol not found")
         print("   Trying to select symbol...")
-        if mt5.symbol_select("EURUSD", True):
-            symbol_info = mt5.symbol_info("EURUSD")
+        if mt5.symbol_select("EURUSD.PRO", True):
+            symbol_info = mt5.symbol_info("EURUSD.PRO")
             if symbol_info is None:
-                print("❌ Still cannot find EURUSD symbol")
+                print("❌ Still cannot find EURUSD.PRO symbol")
                 return False
         else:
-            print("❌ Failed to select EURUSD symbol")
+            print("❌ Failed to select EURUSD.PRO symbol")
             return False
     
     print(f"✅ Symbol: {symbol_info.name}")
@@ -83,9 +83,9 @@ def test_mt5_connection():
     
     # Step 5: Test tick data
     print("5. Testing tick data...")
-    tick = mt5.symbol_info_tick("EURUSD")
+    tick = mt5.symbol_info_tick("EURUSD.PRO")
     if tick is None:
-        print("❌ No tick data for EURUSD")
+        print("❌ No tick data for EURUSD.PRO")
         return False
     
     print(f"✅ Tick data available")
@@ -95,7 +95,7 @@ def test_mt5_connection():
     
     # Step 6: Test data retrieval
     print("6. Testing data retrieval...")
-    rates = mt5.copy_rates_from_pos("EURUSD", mt5.TIMEFRAME_M5, 0, 10)
+    rates = mt5.copy_rates_from_pos("EURUSD.PRO", mt5.TIMEFRAME_M5, 0, 10)
     if rates is None:
         print("❌ Failed to get market data")
         return False
@@ -103,7 +103,7 @@ def test_mt5_connection():
     df = pd.DataFrame(rates)
     df['time'] = pd.to_datetime(df['time'], unit='s')
     
-    print(f"✅ Retrieved {len(df)} bars of EURUSD data")
+    print(f"✅ Retrieved {len(df)} bars of EURUSD.PRO data")
     print(f"✅ Latest time: {df['time'].iloc[-1]}")
     print(f"✅ Latest close: {df['close'].iloc[-1]:.5f}")
     
@@ -113,7 +113,7 @@ def test_mt5_connection():
     # Create a test order request (won't actually place it)
     request = {
         "action": mt5.TRADE_ACTION_DEAL,
-        "symbol": "EURUSD",
+        "symbol": "EURUSD.PRO",
         "volume": 0.01,
         "type": mt5.ORDER_TYPE_BUY,
         "price": symbol_info.ask,

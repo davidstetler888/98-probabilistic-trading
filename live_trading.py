@@ -63,17 +63,17 @@ class LiveTrader:
         print(f"✅ Equity: ${account_info.equity:.2f}")
         
         # Check symbol availability
-        symbol_info = mt5.symbol_info("EURUSD")
+        symbol_info = mt5.symbol_info("EURUSD.PRO")
         if symbol_info is None:
-            print("❌ EURUSD symbol not found")
+            print("❌ EURUSD.PRO symbol not found")
             print("   Trying to select symbol...")
-            if mt5.symbol_select("EURUSD", True):
-                symbol_info = mt5.symbol_info("EURUSD")
+            if mt5.symbol_select("EURUSD.PRO", True):
+                symbol_info = mt5.symbol_info("EURUSD.PRO")
                 if symbol_info is None:
-                    print("❌ Still cannot find EURUSD symbol")
+                    print("❌ Still cannot find EURUSD.PRO symbol")
                     return False
             else:
-                print("❌ Failed to select EURUSD symbol")
+                print("❌ Failed to select EURUSD.PRO symbol")
                 return False
         
         print(f"✅ Symbol: {symbol_info.name}")
@@ -82,7 +82,7 @@ class LiveTrader:
         
         return True
     
-    def get_latest_data(self, symbol="EURUSD", timeframe=None, bars=100):
+    def get_latest_data(self, symbol="EURUSD.PRO", timeframe=None, bars=100):
         if MT5_AVAILABLE and timeframe is None:
             timeframe = mt5.TIMEFRAME_M5
         """Get latest market data."""
@@ -166,7 +166,7 @@ class LiveTrader:
             print(f"❌ Trade failed: {result.comment}")
             return False
     
-    def run_live_trading(self, symbol="EURUSD", check_interval=60):
+    def run_live_trading(self, symbol="EURUSD.PRO", check_interval=60):
         """Run live trading loop."""
         print(f"🚀 Starting live trading for {symbol}...")
         
@@ -287,7 +287,7 @@ def main():
     trader = LiveTrader(live_system)
     
     # Configuration
-    symbol = "EURUSD"
+    symbol = "EURUSD.PRO"
     check_interval = 60  # Check every 60 seconds
     
     print(f"\nConfiguration:")

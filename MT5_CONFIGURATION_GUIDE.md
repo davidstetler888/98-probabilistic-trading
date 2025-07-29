@@ -92,9 +92,9 @@ python3 live_trading.py
 - Make sure you're logged into MT5 terminal
 - Check if your account is active
 
-**3. "No tick data for EURUSD"**
+**3. "No tick data for EURUSD.PRO"**
 - Check internet connection
-- Verify EURUSD is available in your MT5
+- Verify EURUSD.PRO is available in your MT5
 - Ensure market is open
 
 ### Support Commands:
@@ -115,7 +115,7 @@ python3 -c "import MetaTrader5 as mt5; mt5.initialize(); print(mt5.symbols_get()
 If you encounter issues:
 
 1. **Check MT5 terminal is running and logged in**
-2. **Verify EURUSD symbol is available**
+2. **Verify EURUSD.PRO symbol is available**
 3. **Test with demo account first**
 4. **Check internet connection**
 
