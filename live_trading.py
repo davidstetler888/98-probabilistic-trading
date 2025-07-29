@@ -46,7 +46,9 @@ class LiveTrader:
         print(f"Terminal info: {mt5.terminal_info()}")
         return True
     
-    def get_latest_data(self, symbol="EURUSD", timeframe=mt5.TIMEFRAME_M5, bars=100):
+    def get_latest_data(self, symbol="EURUSD", timeframe=None, bars=100):
+        if MT5_AVAILABLE and timeframe is None:
+            timeframe = mt5.TIMEFRAME_M5
         """Get latest market data."""
         if not MT5_AVAILABLE:
             # Create mock data for testing
