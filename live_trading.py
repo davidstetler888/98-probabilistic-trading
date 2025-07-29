@@ -1,6 +1,8 @@
 """
 Live Trading Script for Revolutionary Trading System
+Updated to use simple MT5 connection without explicit login credentials
 """
+
 import pandas as pd
 import numpy as np
 import time
@@ -26,24 +28,58 @@ class LiveTrader:
         self.profit_loss = 0.0
         
     def connect_mt5(self):
-        """Connect to MetaTrader 5."""
+        """Connect to MetaTrader 5 using simple initialization."""
         if not MT5_AVAILABLE:
             print("❌ MetaTrader5 not available")
             return False
             
+        print("🔧 Connecting to MetaTrader 5...")
+        
+        # Simple initialization - uses existing MT5 terminal session
         if not mt5.initialize():
-            print("❌ Failed to initialize MT5")
+            print(f"❌ Failed to initialize MT5: {mt5.last_error()}")
+            print("   Make sure MT5 terminal is running and logged in")
             return False
         
-        # Login to your account (update with your credentials)
-        # Uncomment and update these lines with your MT5 credentials:
-        # authorized = mt5.login(login=YOUR_LOGIN, password=YOUR_PASSWORD, server=YOUR_SERVER)
-        # if not authorized:
-        #     print("❌ Failed to login to MT5")
-        #     return False
+        # Check terminal info
+        terminal_info = mt5.terminal_info()
+        if terminal_info is None:
+            print("❌ Terminal info not available")
+            return False
+            
+        print(f"✅ Connected to MT5 Terminal: {terminal_info.name}")
+        print(f"✅ Connected: {terminal_info.connected}")
         
-        print("✅ Connected to MetaTrader 5")
-        print(f"Terminal info: {mt5.terminal_info()}")
+        # Check account info
+        account_info = mt5.account_info()
+        if account_info is None:
+            print("❌ Account info not available")
+            print("   Make sure you're logged into MT5 terminal")
+            return False
+            
+        print(f"✅ Account: {account_info.login}")
+        print(f"✅ Server: {account_info.server}")
+        print(f"✅ Balance: ${account_info.balance:.2f}")
+        print(f"✅ Equity: ${account_info.equity:.2f}")
+        
+        # Check symbol availability
+        symbol_info = mt5.symbol_info("EURUSD")
+        if symbol_info is None:
+            print("❌ EURUSD symbol not found")
+            print("   Trying to select symbol...")
+            if mt5.symbol_select("EURUSD", True):
+                symbol_info = mt5.symbol_info("EURUSD")
+                if symbol_info is None:
+                    print("❌ Still cannot find EURUSD symbol")
+                    return False
+            else:
+                print("❌ Failed to select EURUSD symbol")
+                return False
+        
+        print(f"✅ Symbol: {symbol_info.name}")
+        print(f"✅ Spread: {symbol_info.spread} points")
+        print(f"✅ Trade mode: {symbol_info.trade_mode}")
+        
         return True
     
     def get_latest_data(self, symbol="EURUSD", timeframe=None, bars=100):
