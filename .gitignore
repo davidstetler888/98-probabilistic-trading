@@ -179,4 +179,5 @@ backtests/
 # Configuration files with sensitive data
 config_local.py
 secrets.py
-.env.local chat_system.txt
+.env.local
+chat_system.txt
