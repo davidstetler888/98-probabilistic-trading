@@ -77,6 +77,7 @@ def check_system_status():
     from_date = datetime.now() - timedelta(days=1)
     history = mt5.history_deals_get(from_date, datetime.now())
     
+    today_trades = []
     if history:
         today_trades = [deal for deal in history if deal.time >= from_date.timestamp()]
         print(f"✅ Trades today: {len(today_trades)}")
