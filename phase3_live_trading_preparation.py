@@ -370,10 +370,10 @@ class LiveTradingSystem:
         """Get live trading configuration."""
         return {
             'trading': {
-                'symbol': 'EURUSD',
+                'symbol': 'EURUSD.PRO',
                 'timeframe': 'M5',
-                'min_confidence': 0.7,
-                'min_expected_value': 0.0004,
+                'min_confidence': 0.5,  # Adjusted from 0.7 to 0.5
+                'min_expected_value': 0.0002,  # Adjusted from 0.0004 to 0.0002
                 'stop_loss_pips': 20,
                 'take_profit_pips': 40
             },
