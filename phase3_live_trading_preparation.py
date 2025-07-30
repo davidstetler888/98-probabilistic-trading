@@ -147,7 +147,7 @@ class RiskManagementSystem:
         return {
             'max_daily_risk': 0.02,      # 2% daily risk limit
             'max_drawdown': 0.15,        # 15% maximum drawdown
-            'max_positions': 3,          # Maximum concurrent positions
+            'max_positions': 1,          # SINGLE TRADE CONSTRAINT: Only one position at a time
             'max_correlation': 0.7,      # Maximum position correlation
             'position_sizing': {
                 'min_size': 0.01,        # Minimum lot size
@@ -203,8 +203,9 @@ class RiskManagementSystem:
         risk_checks = {
             'daily_risk_ok': daily_pnl >= -(current_balance * self.config['max_daily_risk']),
             'drawdown_ok': current_drawdown <= self.config['max_drawdown'],
-            'position_limit_ok': len(current_positions) < self.config['max_positions'],
-            'margin_ok': account_info['free_margin'] > 0
+            'position_limit_ok': len(current_positions) < self.config['max_positions'],  # Should be 1 for single trade constraint
+            'margin_ok': account_info['free_margin'] > 0,
+            'single_trade_constraint': len(current_positions) == 0  # ENFORCE: No positions open
         }
         
         # Update risk metrics
@@ -446,6 +447,10 @@ class LiveTradingSystem:
         # Get account and position information
         account_info = self.mt5_manager.get_account_info()
         current_positions = self.mt5_manager.get_positions()
+        
+        # SINGLE TRADE CONSTRAINT: Check if we already have an open position
+        if len(current_positions) >= 1:
+            return {'action': 'no_action', 'reason': 'single_trade_constraint_active'}
         
         # Check risk management limits
         risk_checks = self.risk_manager.check_risk_limits(account_info, current_positions)

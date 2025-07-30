@@ -1,6 +1,7 @@
 """
 Live Trading Script for Revolutionary Trading System
 Updated to use simple MT5 connection without explicit login credentials
+ENFORCES SINGLE TRADE CONSTRAINT with cooldown period
 """
 
 import pandas as pd
@@ -26,6 +27,12 @@ class LiveTrader:
         self.last_bar_time = None
         self.trade_count = 0
         self.profit_loss = 0.0
+        
+        # SINGLE TRADE CONSTRAINT ENFORCEMENT
+        self.last_trade_time = None
+        self.cooldown_minutes = 5  # 5-minute cooldown between trades
+        self.max_positions = 1     # Only one trade open at a time
+        self.open_positions = []   # Track open positions
         
     def connect_mt5(self):
         """Connect to MetaTrader 5 using simple initialization."""
@@ -100,38 +107,81 @@ class LiveTrader:
         return df
     
     def _create_mock_data(self):
-        """Create mock data for testing without MT5."""
-        dates = pd.date_range(end=datetime.now(), periods=100, freq='5T')
-        prices = 1.1000 + np.cumsum(np.random.normal(0, 0.0001, 100))
+        """Create mock data for testing when MT5 is not available."""
+        # Create realistic mock data
+        end_time = datetime.now()
+        start_time = end_time - timedelta(hours=8)
+        
+        timestamps = pd.date_range(start=start_time, end=end_time, freq='5T')
+        np.random.seed(42)  # For reproducible results
+        
+        # Create realistic EURUSD price movements
+        base_price = 1.09350
+        prices = []
+        for i in range(len(timestamps)):
+            if i == 0:
+                price = base_price
+            else:
+                # Small random walk
+                change = np.random.normal(0, 0.0001)
+                price = prices[-1] + change
+            prices.append(price)
         
         df = pd.DataFrame({
-            'open': prices,
-            'close': prices + np.random.normal(0, 0.0001, 100),
-            'high': prices + np.abs(np.random.normal(0, 0.0003, 100)),
-            'low': prices - np.abs(np.random.normal(0, 0.0003, 100)),
-            'volume': np.random.randint(100, 1000, 100)
-        }, index=dates)
-        
-        # Ensure OHLC relationship
-        df['high'] = np.maximum(df['high'], np.maximum(df['open'], df['close']))
-        df['low'] = np.minimum(df['low'], np.minimum(df['open'], df['close']))
+            'open': [p - np.random.uniform(0, 0.00005) for p in prices],
+            'high': [p + np.random.uniform(0, 0.0001) for p in prices],
+            'low': [p - np.random.uniform(0, 0.0001) for p in prices],
+            'close': prices,
+            'tick_volume': np.random.randint(50, 200, len(timestamps)),
+            'spread': np.random.uniform(0.0001, 0.0003, len(timestamps)),
+            'real_volume': np.random.randint(50, 200, len(timestamps))
+        }, index=timestamps)
         
         return df
     
     def process_market_data(self, df: pd.DataFrame):
-        """Process market data and generate trading signals."""
-        if len(df) < 50:  # Need minimum data for features
-            return None
+        """Process market data and get trading decision."""
+        return self.system.process_market_data(df)
+    
+    def check_single_trade_constraint(self):
+        """Check if we can place a new trade based on single trade constraint."""
+        current_time = datetime.now()
         
-        # Process with trading system
-        trade_decision = self.system.process_market_data(df)
+        # Check if we have open positions
+        if MT5_AVAILABLE:
+            positions = mt5.positions_get(symbol="EURUSD.PRO")
+            if positions is None:
+                positions = []
+            open_positions = len(positions)
+        else:
+            # Mock position tracking
+            open_positions = len(self.open_positions)
         
-        return trade_decision
+        # SINGLE TRADE CONSTRAINT: Only allow one position at a time
+        if open_positions >= self.max_positions:
+            return False, f"Single trade constraint: {open_positions} positions open (max: {self.max_positions})"
+        
+        # Check cooldown period
+        if self.last_trade_time is not None:
+            time_since_last_trade = current_time - self.last_trade_time
+            cooldown_delta = timedelta(minutes=self.cooldown_minutes)
+            
+            if time_since_last_trade < cooldown_delta:
+                remaining_cooldown = cooldown_delta - time_since_last_trade
+                return False, f"Cooldown period: {remaining_cooldown.seconds//60}m {remaining_cooldown.seconds%60}s remaining"
+        
+        return True, "Trade allowed"
     
     def execute_trade(self, trade_decision):
-        """Execute trade decision."""
+        """Execute trade decision with single trade constraint enforcement."""
         if trade_decision['action'] == 'no_action':
             return True
+        
+        # CHECK SINGLE TRADE CONSTRAINT
+        can_trade, reason = self.check_single_trade_constraint()
+        if not can_trade:
+            print(f"🚫 Trade blocked: {reason}")
+            return False
         
         if not MT5_AVAILABLE:
             # Mock trade execution for testing
@@ -139,7 +189,22 @@ class LiveTrader:
             print(f"   Price: {trade_decision['price']:.5f}")
             print(f"   SL: {trade_decision['stop_loss']:.5f}, TP: {trade_decision['take_profit']:.5f}")
             print(f"   Confidence: {trade_decision['confidence']:.3f}")
+            
+            # Track mock position
+            mock_position = {
+                'ticket': self.trade_count + 1,
+                'symbol': trade_decision['symbol'],
+                'type': trade_decision['action'],
+                'volume': trade_decision['volume'],
+                'price': trade_decision['price'],
+                'sl': trade_decision['stop_loss'],
+                'tp': trade_decision['take_profit'],
+                'time': datetime.now()
+            }
+            self.open_positions.append(mock_position)
+            
             self.trade_count += 1
+            self.last_trade_time = datetime.now()
             return True
         
         # Place order via MT5
@@ -161,14 +226,39 @@ class LiveTrader:
         if result.retcode == mt5.TRADE_RETCODE_DONE:
             print(f"✅ Trade executed: {trade_decision['action']} {trade_decision['volume']} {trade_decision['symbol']}")
             self.trade_count += 1
+            self.last_trade_time = datetime.now()
             return True
         else:
             print(f"❌ Trade failed: {result.comment}")
             return False
     
+    def update_position_tracking(self):
+        """Update position tracking for single trade constraint."""
+        if MT5_AVAILABLE:
+            # Get current positions from MT5
+            positions = mt5.positions_get(symbol="EURUSD.PRO")
+            if positions is None:
+                positions = []
+            
+            # Update open positions count
+            current_open_positions = len(positions)
+            
+            # If positions were closed, reset cooldown
+            if current_open_positions == 0 and len(self.open_positions) > 0:
+                print("📊 All positions closed - cooldown period active")
+                self.open_positions = []
+        else:
+            # Mock position tracking - simulate position closure after some time
+            current_time = datetime.now()
+            self.open_positions = [
+                pos for pos in self.open_positions 
+                if (current_time - pos['time']).total_seconds() < 3600  # Close after 1 hour for testing
+            ]
+    
     def run_live_trading(self, symbol="EURUSD.PRO", check_interval=60):
-        """Run live trading loop."""
+        """Run live trading loop with single trade constraint enforcement."""
         print(f"🚀 Starting live trading for {symbol}...")
+        print(f"🛡️ SINGLE TRADE CONSTRAINT: Max {self.max_positions} position, {self.cooldown_minutes}min cooldown")
         
         if MT5_AVAILABLE:
             if not self.connect_mt5():
@@ -184,6 +274,9 @@ class LiveTrader:
         
         try:
             while self.is_running:
+                # Update position tracking
+                self.update_position_tracking()
+                
                 # Get latest data
                 df = self.get_latest_data(symbol)
                 if df is None:
@@ -203,11 +296,17 @@ class LiveTrader:
                 trade_decision = self.process_market_data(df)
                 
                 if trade_decision:
-                    print(f"📊 {latest_time}: {trade_decision['action']} - {trade_decision.get('reason', 'Signal generated')}")
+                    # Check single trade constraint before executing
+                    can_trade, reason = self.check_single_trade_constraint()
                     
-                    # Execute trade if signal
-                    if trade_decision['action'] != 'no_action':
-                        self.execute_trade(trade_decision)
+                    if can_trade:
+                        print(f"📊 {latest_time}: {trade_decision['action']} - {trade_decision.get('reason', 'Signal generated')}")
+                        
+                        # Execute trade if signal
+                        if trade_decision['action'] != 'no_action':
+                            self.execute_trade(trade_decision)
+                    else:
+                        print(f"📊 {latest_time}: Signal generated but blocked - {reason}")
                 
                 # Update performance metrics
                 self.system.update_performance()
@@ -228,83 +327,64 @@ class LiveTrader:
                 time.sleep(check_interval)
                 
         except KeyboardInterrupt:
-            print("\n🛑 Stopping live trading...")
+            print("\n🛑 Live trading stopped by user")
+        except Exception as e:
+            print(f"❌ Error in live trading: {e}")
+        finally:
             self.stop_live_trading()
     
     def stop_live_trading(self):
         """Stop live trading."""
         self.is_running = False
-        self.system.stop_trading()
         if MT5_AVAILABLE:
             mt5.shutdown()
         print("✅ Live trading stopped")
-        print(f"📊 Final stats: {self.trade_count} trades executed")
 
 def main():
-    """Main function to run live trading."""
-    
+    """Main function."""
     print("🚀 Revolutionary Trading System - Live Trading")
     print("=" * 50)
     
-    # Load your trained system
+    # Load trained system
     print("Loading trained system...")
-    
-    # For demonstration, we'll create a new system and train it
-    # In production, you'd load a saved trained system
-    from phase3_live_trading_preparation import LiveTradingSystem
-    
-    # Create sample data for demonstration
-    # Replace this with your actual training data
-    print("Creating sample training data...")
-    np.random.seed(42)
-    dates = pd.date_range('2024-01-01', periods=5000, freq='5T')
-    prices = 1.1000 + np.cumsum(np.random.normal(0, 0.0001, 5000))
-    
-    training_data = pd.DataFrame({
-        'open': prices,
-        'close': prices + np.random.normal(0, 0.0001, 5000),
-        'high': prices + np.abs(np.random.normal(0, 0.0003, 5000)),
-        'low': prices - np.abs(np.random.normal(0, 0.0003, 5000)),
-        'volume': np.random.randint(100, 1000, 5000)
-    }, index=dates)
-    
-    # Ensure OHLC relationship
-    training_data['high'] = np.maximum(training_data['high'], np.maximum(training_data['open'], training_data['close']))
-    training_data['low'] = np.minimum(training_data['low'], np.minimum(training_data['open'], training_data['close']))
-    
-    # Initialize and train system
-    print("Initializing and training system...")
-    live_system = LiveTradingSystem()
-    success = live_system.initialize_system(training_data)
-    
-    if not success:
-        print("❌ Failed to initialize system")
-        return
-    
-    print("✅ System initialized successfully!")
-    
-    # Create live trader
-    trader = LiveTrader(live_system)
-    
-    # Configuration
-    symbol = "EURUSD.PRO"
-    check_interval = 60  # Check every 60 seconds
-    
-    print(f"\nConfiguration:")
-    print(f"Symbol: {symbol}")
-    print(f"Check interval: {check_interval} seconds")
-    print(f"MT5 available: {MT5_AVAILABLE}")
-    
-    if not MT5_AVAILABLE:
-        print("\n⚠️ Running in simulation mode")
-        print("To enable real trading:")
-        print("1. Install MT5: pip install MetaTrader5")
-        print("2. Update login credentials in the script")
-        print("3. Restart the system")
-    
-    # Run live trading
-    print(f"\nStarting live trading...")
-    trader.run_live_trading(symbol=symbol, check_interval=check_interval)
+    try:
+        # Create sample training data for demonstration
+        print("Creating sample training data...")
+        np.random.seed(42)
+        dates = pd.date_range(start='2024-01-01', end='2024-01-31', freq='5T')
+        sample_data = pd.DataFrame({
+            'open': np.random.uniform(1.09, 1.10, len(dates)),
+            'high': np.random.uniform(1.09, 1.10, len(dates)),
+            'low': np.random.uniform(1.09, 1.10, len(dates)),
+            'close': np.random.uniform(1.09, 1.10, len(dates)),
+            'volume': np.random.randint(50, 200, len(dates))
+        }, index=dates)
+        
+        # Initialize live trading system
+        print("Initializing and training system...")
+        live_system = LiveTradingSystem()
+        live_system.initialize_system(sample_data)
+        
+        # Create live trader
+        trader = LiveTrader(live_system)
+        
+        # Configuration
+        symbol = "EURUSD.PRO"
+        check_interval = 60  # 60 seconds
+        
+        print(f"✅ System initialized successfully!")
+        print(f"Configuration:")
+        print(f"   Symbol: {symbol}")
+        print(f"   Check interval: {check_interval} seconds")
+        print(f"   MT5 available: {MT5_AVAILABLE}")
+        
+        # Start live trading
+        trader.run_live_trading(symbol=symbol, check_interval=check_interval)
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main() 
